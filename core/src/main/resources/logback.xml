@@ -1,0 +1,14 @@
+<configuration>
+
+    <contextName>\${HOSTNAME}</contextName>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} %-5level host=%contextName [%thread] logger=%logger{10} %msg%n%ex{10}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>

@@ -1,0 +1,56 @@
+#This is the jobs to be executed when a Pull Request is merged or a push to master happens
+name: Merge Main
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  GITHUB_TOKEN: \${{ github.token }}
+  ORG_TOKEN: \${{ secrets.SVC_TS_JENKINS_GIT_SPORTSBET_ORG_TOKEN }}
+
+jobs:
+  unit-test-with-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Compile and run tests
+        run: sbt clean coverage test coverageReport
+
+  integration-test:
+    needs: [ unit-test-with-coverage ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+
+      - name: Run integration tests
+        run: sbt "IntegrationTest / test"
+
+  functional-test:
+    needs: [ unit-test-with-coverage ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Run Functional tests
+        run: sbt "FunTest / test"
