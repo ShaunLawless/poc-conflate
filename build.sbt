@@ -17,7 +17,8 @@ ThisBuild / coverageEnabled := false
 lazy val FunTest: Configuration = config("fun").extend(Test)
 lazy val funTestSettings: Seq[Def.Setting[_]] = inConfig(FunTest)(Defaults.testSettings)
 
-lazy val core = (project in file("core")).configs(IntegrationTest, FunTest)
+lazy val core = (project in file("core"))
+  .configs(IntegrationTest, FunTest)
   .settings(
     Defaults.itSettings,
     funTestSettings,
@@ -35,7 +36,8 @@ lazy val core = (project in file("core")).configs(IntegrationTest, FunTest)
   .dependsOn(model)
   .enablePlugins(JavaAppPackaging, DockerPlugin, AshScriptPlugin)
 
-lazy val model = (project in file("model")).configs(IntegrationTest, FunTest)
+lazy val model = (project in file("model"))
+  .configs(IntegrationTest, FunTest)
   .settings(
     Defaults.itSettings,
     funTestSettings,
@@ -43,11 +45,14 @@ lazy val model = (project in file("model")).configs(IntegrationTest, FunTest)
     libraryDependencies ++= coreDeps,
     coverageMinimum := 60, //@todo this is set low for initial template installation, increase appropriately
     coverageFailOnMinimum := true,
-    publish / aggregate := false
+    publish / aggregate := false,
+    Docker / publish := {},
+    Docker / publishLocal := {}
   )
   .enablePlugins(JavaAppPackaging)
 
-lazy val testcontainer = (project in file("testcontainer")).configs(IntegrationTest, FunTest)
+lazy val testcontainer = (project in file("testcontainer"))
+  .configs(IntegrationTest, FunTest)
   .settings(
     Defaults.itSettings,
     funTestSettings,
@@ -76,3 +81,6 @@ lazy val root = (project in file("."))
 ThisBuild / publishMavenStyle := true
 ThisBuild / credentials += Credentials(realm, packageRepoBase, gitHubUser, orgTokenOrElseGithubToken)
 ThisBuild / resolvers += s"$realm".at(s"$packageRepo")
+
+ThisBuild / sources in (Compile,doc) := Seq.empty
+ThisBuild / publishArtifact in (Compile, packageDoc) := false

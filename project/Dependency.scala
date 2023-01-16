@@ -2,7 +2,7 @@ import sbt._
 
 object Dependency {
 
-  val AkkaVersion = "2.6.14"
+  val AkkaVersion = "2.6.19"
   val AkkaHttpVersion = "10.2.9"
   lazy val akkaStreamVersion = "3.0.1"
   val log4jVersion = "2.14.1"
