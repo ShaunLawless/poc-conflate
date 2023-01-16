@@ -16,19 +16,26 @@ import scala.concurrent.duration.DurationInt
 object MappingStream {
 
   case class EventId(value: Int) extends AnyVal
-  case class Payload()
+  case class Payload(eventId: Int, marketId: Int, selections: Set[Int])
 
-  case class Offsets(committableOffsetBatch: CommittableOffsetBatch)
+  // may need to group by event id
+  case class AggregatedMessage(eventId: Int, markets: Map[Int, Set[Int]] = Map.empty)
 
-  case class AggregatedMessage()
+  def seed: CommittableMessage[EventId, Payload] => (AggregatedMessage, CommittableOffsetBatch) =
+    msg => (AggregatedMessage(msg.record.key().value), CommittableOffsetBatch.empty)
 
-  def groupKey: CommittableMessage[EventId, Payload] => EventId = ???
+  def combine: ((AggregatedMessage, CommittableOffsetBatch), CommittableMessage[EventId, Payload]) => (AggregatedMessage, CommittableOffsetBatch) =
+    (agg, msg) =>
+      (
+        AggregatedMessage(
+          agg._1.eventId,
+          agg._1.markets.updated(msg.record.value().marketId, agg._1.markets.get(msg.record.value().marketId) ++ msg.record.value().selections)
+        ),
+        agg._2.updated(msg.committableOffset)
+      )
 
-  def seed: CommittableMessage[EventId, Payload] => (AggregatedMessage, Offsets) = ???
-
-  def combine: ((AggregatedMessage, Offsets), CommittableMessage[EventId, Payload]) => (AggregatedMessage, Offsets) = ???
-
-  def createRecord: ((AggregatedMessage, Offsets)) => MultiMessage[EventId, AggregatedMessage, CommittableOffsetBatch] = ???
+  // This will need a group of aggregate message keyed on event id to form the Multimessage
+  def createRecord: ((AggregatedMessage, CommittableOffsetBatch)) => MultiMessage[EventId, AggregatedMessage, CommittableOffsetBatch] = ???
 
   private[this] val restartSettings: RestartSettings =
     RestartSettings(
