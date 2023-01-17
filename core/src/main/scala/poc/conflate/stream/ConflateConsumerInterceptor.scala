@@ -7,14 +7,16 @@ import scala.jdk.CollectionConverters._
 
 class ConflateConsumerInterceptor extends ConsumerInterceptor[EventId, Payload] with LazyLogging{
 
-  override def onConsume(records: ConsumerRecords[EventId, Payload]): ConsumerRecords[EventId, Payload] = records
+  override def onConsume(records: ConsumerRecords[EventId, Payload]): ConsumerRecords[EventId, Payload] =
+    records
 
   override def onCommit(offsets: java.util.Map[TopicPartition, OffsetAndMetadata]): Unit =
   {
+    val x = offsets
     for ( o <- offsets.values().asScala) {
-
-      logger.info(s"Commited Offsets were ${o.offset}")
+      println(s"Commited Offsets were ${o.offset}")
     }
+
   }
 
   override def close(): Unit = {}

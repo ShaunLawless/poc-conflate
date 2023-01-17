@@ -51,8 +51,15 @@ object MappingStream {
     ) = {
     Consumer
       .committableSource(consumerSettings, Subscriptions.topics(topic))
+      //.throttle(500, 500.milliseconds)
+      .map(msg => {
+        println("pre-conflate" + msg.record.value()); msg
+      })
       .conflateWithSeed(seed)(combine)
-      .throttle(1, 10.seconds)
+      .throttle(1, 500.milliseconds)
+      .map(msg => {
+        println("post-conflate" + msg); msg
+      })
       .map(createRecord)
       .via(Producer.flexiFlow(producerSettings))
       .map(_.passThrough)

@@ -5,6 +5,7 @@ import akka.kafka.{CommitterSettings, ConsumerSettings, ProducerSettings}
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
 import io.github.embeddedkafka.{EmbeddedK, EmbeddedKafka, EmbeddedKafkaConfig}
+import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.{Producer, ProducerRecord}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
@@ -37,6 +38,7 @@ class MappingStreamSpec extends TestKit(ActorSystem("MappingStreamSpecSys", Conf
   val testProducer: Producer[EventId, Payload] = testProducerSettings.createKafkaProducer()
 
   val consumerSettings: ConsumerSettings[EventId, Payload] = ConsumerSettings(system, eventIdDeserializer, payloadDeserializer).withGroupId("mapping-consumer")
+    .withProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, "poc.conflate.stream.ConflateConsumerInterceptor")
   val streamProducerSettings: ProducerSettings[EventId, Mapping] = ProducerSettings(system, Some(eventIdSerializer), Some(mappingSerializer)).withClientId("mapping-producer")
   val committerSettings: CommitterSettings = CommitterSettings(system)
 
