@@ -5,10 +5,12 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/flutter-global/$repo-name$/$docker-package-name$
-  pullPolicy: Never
+  repository: poc-conflate
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "0.1.0-SNAPSHOT"
+  test:
+    repository: poc-conflate-test-container
 
 imagePullSecrets: []
 nameOverride: ""
@@ -87,3 +89,39 @@ affinity: {}
 container:
   configuration:
     httpServerPort: 80
+
+
+kafka:
+  enabled: true
+  nameOverride: poc-kafka
+  service:
+    type: LoadBalancer
+  externalAccess:
+    enabled: true
+    service:
+      ports:
+        external: 9096
+      loadBalancerIPs:
+        - localhost
+  provisioning:
+    enabled: true
+    topics:
+      - name: 'rtt.inbound.mappings'
+        partitions: 10
+        replicationFactor: 1
+        config:
+          retention.ms: 900000
+          segment.ms: 900000
+      - name: 'exchange.outbound'
+        partitions: 10
+        replicationFactor: 1
+        config:
+          retention.ms: 900000
+          segment.ms: 900000
+  metrics:
+    kafka:
+      enabled: true
+  zookeeper:
+    nameOverride: poc-zookeeper
+    service:
+      type: LoadBalancer

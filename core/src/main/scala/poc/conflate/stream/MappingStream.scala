@@ -69,5 +69,3 @@ object MappingStream {
   }
 
 }
-
-
