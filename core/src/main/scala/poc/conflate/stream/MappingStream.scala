@@ -1,34 +1,37 @@
 package poc.conflate.stream
 
-import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffset, CommittableOffsetBatch}
-import akka.kafka.ProducerMessage.MultiMessage
-import akka.kafka.scaladsl.Consumer.DrainingControl
-import akka.kafka.{CommitterSettings, ConsumerMessage, ConsumerSettings, ProducerMessage, ProducerSettings, Subscriptions}
+import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffsetBatch}
+import akka.kafka.ProducerMessage.{Message, MultiMessage}
 import akka.kafka.scaladsl.{Committer, Consumer, Producer}
+import akka.kafka.{CommitterSettings, ConsumerSettings, ProducerSettings, Subscriptions}
+import akka.stream.scaladsl.Sink
 import akka.stream.{Materializer, RestartSettings}
-import akka.{Done, NotUsed}
-import akka.stream.scaladsl.{Keep, RestartSource, Sink, Source}
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
 
 import scala.concurrent.duration.DurationInt
 
 object MappingStream {
 
-  case class EventId(value: Int) extends AnyVal
-  case class Payload()
-
   case class Offsets(committableOffsetBatch: CommittableOffsetBatch)
 
-  case class AggregatedMessage()
+  def groupKey: CommittableMessage[EventId, Payload] => EventId = cm => cm.record.key()
 
-  def groupKey: CommittableMessage[EventId, Payload] => EventId = ???
+  val produceTopic: String = "outboundMappings"
 
-  def seed: CommittableMessage[EventId, Payload] => (AggregatedMessage, Offsets) = ???
+  def seed: CommittableMessage[EventId, Payload] => (AggregatedMessage, Offsets) = cm =>
+    (AggregatedMessage(cm.record.key().value, List(cm.record.value().value).flatten), Offsets(CommittableOffsetBatch(cm.committableOffset)))
 
-  def combine: ((AggregatedMessage, Offsets), CommittableMessage[EventId, Payload]) => (AggregatedMessage, Offsets) = ???
+  def combine: ((AggregatedMessage, Offsets), CommittableMessage[EventId, Payload]) => (AggregatedMessage, Offsets) = {
+    case ((aggMsg, offsets), cm) =>
+      (aggMsg.add(cm.record.value().value), offsets.copy(offsets.committableOffsetBatch.updated(cm.committableOffset)))
+  }
 
-  def createRecord: ((AggregatedMessage, Offsets)) => MultiMessage[EventId, AggregatedMessage, CommittableOffsetBatch] = ???
+  def createRecord: ((Mapping, Offsets)) => Message[EventId, Mapping, CommittableOffsetBatch] = {
+    case (mapping, off) =>
+      val pr:ProducerRecord[EventId,Mapping] = new ProducerRecord(produceTopic, EventId(mapping.id), mapping)
+      Message(pr, off.committableOffsetBatch)
+
+  }
 
   private[this] val restartSettings: RestartSettings =
     RestartSettings(
@@ -39,7 +42,7 @@ object MappingStream {
 
   def restartableStream(
       consumerSettings: ConsumerSettings[EventId, Payload],
-      producerSettings: ProducerSettings[EventId, Payload],
+      producerSettings: ProducerSettings[EventId, Mapping],
       committerSettings: CommitterSettings,
       topic: String
     )(implicit materializer: Materializer
@@ -47,7 +50,7 @@ object MappingStream {
     Consumer
       .committableSource(consumerSettings, Subscriptions.topics(topic))
       .conflateWithSeed(seed)(combine)
-      .throttle(200, 500.milliseconds)
+      .throttle(2, 1.seconds)
       .map(createRecord)
       .via(Producer.flexiFlow(producerSettings))
       .map(_.passThrough)
@@ -57,3 +60,5 @@ object MappingStream {
   }
 
 }
+
+

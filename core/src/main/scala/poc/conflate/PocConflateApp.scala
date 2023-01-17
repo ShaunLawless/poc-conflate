@@ -1,12 +1,10 @@
 package poc.conflate
 
+import akka.actor.CoordinatedShutdown
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.CoordinatedShutdown
-
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import poc.conflate.http.Server
