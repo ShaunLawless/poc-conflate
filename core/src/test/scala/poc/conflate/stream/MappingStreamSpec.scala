@@ -38,7 +38,7 @@ class MappingStreamSpec extends TestKit(ActorSystem("MappingStreamSpecSys", Conf
   val testProducer: Producer[EventId, Payload] = testProducerSettings.createKafkaProducer()
 
   val consumerSettings: ConsumerSettings[EventId, Payload] = ConsumerSettings(system, eventIdDeserializer, payloadDeserializer).withGroupId("mapping-consumer")
-    .withProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, "poc.conflate.stream.ConflateConsumerInterceptor")
+    //.withProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, "poc.conflate.stream.ConflateConsumerInterceptor")
   val streamProducerSettings: ProducerSettings[EventId, Mapping] = ProducerSettings(system, Some(eventIdSerializer), Some(mappingSerializer)).withClientId("mapping-producer")
   val committerSettings: CommitterSettings = CommitterSettings(system)
 
@@ -65,7 +65,7 @@ class MappingStreamSpec extends TestKit(ActorSystem("MappingStreamSpecSys", Conf
     val payload2 = Payload(12, List(4455))
     val pr:ProducerRecord[EventId, Payload] = new ProducerRecord(inboundTopic, key, payload)
     val pr2:ProducerRecord[EventId, Payload] = new ProducerRecord(inboundTopic, key, payload2)
-    Thread.sleep(3000)
+    Thread.sleep(5000)
 
     testProducer.send(pr)
     testProducer.send(pr2)
@@ -74,11 +74,11 @@ class MappingStreamSpec extends TestKit(ActorSystem("MappingStreamSpecSys", Conf
 
     val consumedRecord:(EventId, Mapping) = consumeFirstKeyedMessageFrom[EventId, Mapping](produceTopic)
     consumedRecord._1 shouldBe key
-    consumedRecord._2 shouldBe payload
+    consumedRecord._2 shouldBe AggregatedMessage(key.value, payload.value)
 
     val consumedRecord2: (EventId, Mapping) = consumeFirstKeyedMessageFrom[EventId, Mapping](produceTopic)
     consumedRecord2._1 shouldBe key
-    consumedRecord2._2 shouldBe payload2
+    consumedRecord2._2 shouldBe AggregatedMessage(key.value, payload2.value)
   }
 
   "MappingStream" should " conflate messages when deliver rate is above throttle threshold" in {
