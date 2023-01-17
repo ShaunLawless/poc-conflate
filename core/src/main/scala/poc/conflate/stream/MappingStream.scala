@@ -1,6 +1,6 @@
 package poc.conflate.stream
 
-import akka.kafka.ConsumerMessage.{CommittableMessage, CommittableOffsetBatch}
+import akka.kafka.ConsumerMessage.{Committable, CommittableMessage, CommittableOffsetBatch, createCommittableOffsetBatch}
 import akka.kafka.ProducerMessage.{Message, MultiMessage}
 import akka.kafka.scaladsl.{Committer, Consumer, Producer}
 import akka.kafka.{CommitterSettings, ConsumerSettings, ProducerSettings, Subscriptions}
@@ -12,7 +12,9 @@ import scala.concurrent.duration.DurationInt
 
 object MappingStream {
 
-  case class Offsets(committableOffsetBatch: CommittableOffsetBatch)
+  case class Offsets(committableOffsetBatch: CommittableOffsetBatch){
+    def updated(offset:Committable) = Offsets(committableOffsetBatch.updated(offset))
+  }
 
   def groupKey: CommittableMessage[EventId, Payload] => EventId = cm => cm.record.key()
 
@@ -23,7 +25,7 @@ object MappingStream {
 
   def combine: ((AggregatedMessage, Offsets), CommittableMessage[EventId, Payload]) => (AggregatedMessage, Offsets) = {
     case ((aggMsg, offsets), cm) =>
-      (aggMsg.add(cm.record.value().value), offsets.copy(offsets.committableOffsetBatch.updated(cm.committableOffset)))
+      (aggMsg.add(cm.record.value().value), offsets.updated(cm.committableOffset))
   }
 
   def createRecord: ((Mapping, Offsets)) => Message[EventId, Mapping, CommittableOffsetBatch] = {
@@ -38,7 +40,7 @@ object MappingStream {
       minBackoff = 3.seconds,
       maxBackoff = 30.seconds,
       randomFactor = 0.2
-    ).withMaxRestarts(20, 5.minutes)
+    ).withMaxRestarts(2, 10000.milliseconds)
 
   def restartableStream(
       consumerSettings: ConsumerSettings[EventId, Payload],
@@ -50,7 +52,7 @@ object MappingStream {
     Consumer
       .committableSource(consumerSettings, Subscriptions.topics(topic))
       .conflateWithSeed(seed)(combine)
-      .throttle(2, 1.seconds)
+      .throttle(1, 10.seconds)
       .map(createRecord)
       .via(Producer.flexiFlow(producerSettings))
       .map(_.passThrough)
