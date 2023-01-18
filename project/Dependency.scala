@@ -43,6 +43,10 @@ object Dependency {
     "org.typelevel" %% "cats-effect" % "3.4.4"
   )
 
+  lazy val embeddedKafka = Seq(
+    "io.github.embeddedkafka" %% "embedded-kafka" % "3.3.1" % "test"
+  )
+
   lazy val coreDeps: Seq[ModuleID] =
-    akka ++ scalatest ++ logging ++ observability ++ cats
+    akka ++ scalatest ++ logging ++ observability ++ cats ++ embeddedKafka
 }

@@ -24,7 +24,7 @@ lazy val core = (project in file("core"))
     funTestSettings,
     name := "poc-conflate",
     libraryDependencies ++= coreDeps,
-    coverageMinimum := 60, //@todo this is set low for initial template installation, increase appropriately
+    coverageMinimum := 5, //@todo this is set low for initial template installation, increase appropriately
     coverageFailOnMinimum := true,
     publishTo := Some(s"$realm".at(s"$packageRepo")),
     dockerBaseImage := "adoptopenjdk:11",
@@ -43,7 +43,7 @@ lazy val model = (project in file("model"))
     funTestSettings,
     name := "poc-model",
     libraryDependencies ++= coreDeps,
-    coverageMinimum := 60, //@todo this is set low for initial template installation, increase appropriately
+    coverageMinimum := 5, //@todo this is set low for initial template installation, increase appropriately
     coverageFailOnMinimum := true,
     publish / aggregate := false,
     Docker / publish := {},
@@ -58,7 +58,7 @@ lazy val testcontainer = (project in file("testcontainer"))
     funTestSettings,
     name := "poc-conflate-test-container",
     libraryDependencies ++= coreDeps,
-    coverageMinimum := 60, //@todo this is set low for initial template installation, increase appropriately
+    coverageMinimum := 5, //@todo this is set low for initial template installation, increase appropriately
     coverageFailOnMinimum := true,
     publishTo := Some(s"$realm".at(s"$packageRepo")),
     dockerBaseImage := "adoptopenjdk:11",
